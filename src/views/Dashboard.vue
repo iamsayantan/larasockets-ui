@@ -4,124 +4,175 @@
     <!-- 1st block -->
     <div class="row m-1 p-2" style="background-color:#F7F7F7;">
       <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12" >
-        <form class="form-inline m-md-3 m-lg-3 m-xl-3">
+        <form class="form-inline m-md-3 m-lg-3 m-xl-3" @submit.prevent="requestForAuthorization">
           <div class="form-group mx-sm-1 m-md-1 m-lg-1 m-xl-1">
             <label for="inputState">App</label>
-            <select id="inputState" class="form-control ml-md-2 ml-lg-2 ml-xl-2">
+            <select v-model="connection_request.app_id" id="inputState" class="form-control ml-md-4 ml-lg-4 ml-xl-4" :disabled="connected">
               <option selected>Choose...</option>
-              <option>Laravel</option>
+              <option v-for="app in apps" :key="app.app_id" :value="app.app_id">{{ app.app_name }}</option>
             </select>
           </div>
           <div class="form-group mx-sm-1">
-            <label for="port">Port</label>
-            <input type="number" class="form-control ml-md-2 ml-lg-2 ml-xl-2" id="port" placeholder="Port">
+            <label for="port">Secret</label>
+            <input
+              v-model="connection_request.app_secret"
+              class="form-control ml-md-4 ml-lg-4 ml-xl-4"
+              id="port" placeholder="Your application secret" 
+              :disabled="connected" />
           </div>
           <div class="form-group mx-sm-1">
-            <button type="submit" class="btn btn-success customeclass">Connect</button>
+            <button v-if="!connected" type="submit" class="btn btn-success customeclass" :disabled="isConnecting">Connect</button>
+            <button v-else type="button" class="btn btn-danger customeclass" :disabled="isDisconnecting">Disconnect</button>
           </div>
 
         </form>
-        <div class="row  text-center">
-          <div class="col-sm-6">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title font-weight-bold">Concurrent Connections</h5>
-                <p class="card-text" style="font-size: 40px">200</p>
-              </div>
+      </div>
+    </div>
+
+    <div v-if="connected">
+      <div class="row  text-center" style="margin-top: 15px;">
+        <div class="col-sm-3">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title font-weight-bold">Concurrent Connections</h5>
+              <p class="card-text" style="font-size: 40px">{{ connection_stats.concurrent }}</p>
             </div>
           </div>
-          <div class="col-sm-6">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title font-weight-bold">Peak Connections</h5>
-                <p class="card-text" style="font-size: 40px">550</p>
-              </div>
+        </div>
+        <div class="col-sm-3">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title font-weight-bold">Peak Connections</h5>
+              <p class="card-text" style="font-size: 40px">550</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-3">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title font-weight-bold">API Messages</h5>
+              <p class="card-text" style="font-size: 40px">335</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-3">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title font-weight-bold">Websocket Messages</h5>
+              <p class="card-text" style="font-size: 40px">2202</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <!-- end of first block -->
-    <!-- graph block -->
-    <div class="row m-1 p-2">
-      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
-        <div id="chart" ref="chart"></div>
+      <!-- end of first block -->
+      <!-- graph block -->
+      <div class="row m-1 p-2">
+        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+          <div id="chart" ref="chart"></div>
+        </div>
       </div>
-    </div>
-    <!-- end of graph block -->
-    <!-- event creator -->
-    <div class="row m-1 p-2">
-      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
-        <h4>Event Creator</h4>
-        <form>
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <input type="email" class="form-control" id="channel" placeholder="Channel">
+      <!-- end of graph block -->
+      <!-- event creator -->
+      <div class="row m-1 p-2">
+        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+          <h4>Event Creator</h4>
+          <form @submit.prevent="handleSendEvent">
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <input v-model="trigger_event_payload.channel" type="text" class="form-control" id="channel" placeholder="Channel">
+              </div>
+              <div class="form-group col-md-6">
+                <input v-model="trigger_event_payload.event" type="text" class="form-control" id="event" placeholder="Event">
+              </div>
+              <div class="form-group col-md-12">
+                <textarea v-model="trigger_event_payload.data" class="form-control" placeholder="Data" id="exampleFormControlTextarea1" rows="4"></textarea>
+              </div>
+              <div class="form-group col-md-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary mb-2">Send Event</button>
+              </div>
             </div>
-            <div class="form-group col-md-6">
-              <input type="password" class="form-control" id="event" placeholder="Event">
-            </div>
-            <div class="form-group col-md-12">
-              <textarea class="form-control" placeholder="Data" id="exampleFormControlTextarea1" rows="4"></textarea>
-            </div>
-            <div class="form-group col-md-12 d-flex justify-content-end">
-              <button type="submit" class="btn btn-primary mb-2">Send Event</button>
-            </div>
-          </div>
 
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
-    <!-- end of event creator -->
+      <!-- end of event creator -->
 
-    <!-- event table -->
-    <div class="row m-1 p-2">
-      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
-        <h4>Events</h4>
-        <table class="table table-striped table-responsive-xs table-responsive-sm">
-          <thead>
-            <tr>
-              <th scope="col">Type</th>
-              <th scope="col">Sockets</th>
-              <th scope="col">Details</th>
-              <th scope="col">Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">
-                <span class="badge badge-secondary">api-message</span>
-              </th>
-              <td>Mark</td>
-              <td>Otto</td>
-              <td>@mdo</td>
-            </tr>
-            <tr>
-              <th scope="row"><span class="badge badge-warning">Vacated</span></th>
-              <td>-</td>
-              <td>Channel private: chat-1</td>
-              <td>1:05:06</td>
-            </tr>
-            <tr>
-              <th scope="row"><span class="badge">Disconnection</span></th>
-              <td>Larry</td>
-              <td>the Bird</td>
-              <td>@twitter</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- event table -->
+      <div class="row m-1 p-2">
+        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+          <h4>Events</h4>
+          <table class="table table-striped table-responsive-xs table-responsive-sm">
+            <thead>
+              <tr>
+                <th scope="col">Type</th>
+                <th scope="col">Sockets</th>
+                <th scope="col">Details</th>
+                <th scope="col">Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <span class="badge badge-secondary">api-message</span>
+                </th>
+                <td>Mark</td>
+                <td>Otto</td>
+                <td>@mdo</td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="badge badge-warning">Vacated</span></th>
+                <td>-</td>
+                <td>Channel private: chat-1</td>
+                <td>1:05:06</td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="badge">Disconnection</span></th>
+                <td>Larry</td>
+                <td>the Bird</td>
+                <td>@twitter</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+      <!-- end event table -->
     </div>
-    <!-- end event table -->
   </div>
 </template>
 <script>
+import Pusher from 'pusher-js'
 import ApexCharts from 'apexcharts'
 
 export default {
   name: "Dashboard",
   data() {
     return {
+      pusher: null,
+      chart: null,
+
+      apps: [],
+
+      connection_request: {
+        app_id: null,
+        app_secret: 'e20b04090c1e5cf11301'
+      },
+
+      connected: false,
+      connected_app: {},
+
+      connection_stats: {
+        concurrent: 0,
+        peak: 0
+      },
+
+      trigger_event_payload: {
+        event: null,
+        channel: null,
+        data: null
+      },
+
+      isConnecting: false,
+      isDisconnecting: false,
       chartOptions: {
         colors: ['#F77F10', '#2C9F29', '#2D7FB7'], // chart bar and line colors
         series: [{
@@ -211,8 +262,121 @@ export default {
     }
   },
   mounted() {
-    const chart = new ApexCharts(this.$refs.chart, this.chartOptions)
-    chart.render()
+    this.fetchAppList()
   },
+  methods: {
+    async fetchAppList() {
+      try {
+      const { data } = await this.$axios.get('/dashboard/apps')
+        this.apps = data.data
+      } catch (e) {
+        console.error(e)
+      }
+    },
+
+    async requestForAuthorization() {
+      if (!this.connection_request.app_id || !this.connection_request.app_secret) {
+        alert('Please select an applicaton and enter the secret.')
+        return
+      }
+
+      try {
+        const { data } = await this.$axios.post('/dashboard/apps/authorize', this.connection_request)
+        this.connection_request.app_secret = null
+        this.connected_app = data.data
+        this.initiatePusher()
+      } catch (e) {
+        if (e.response && e.response.data) {
+          alert(e.response.data.message)
+        }
+        console.error(e)
+      }
+    },
+
+    initiatePusher() {
+      if (!this.connected_app.api_key) {
+        return
+      }
+
+      const scheme = process.env.VUE_APP_TLS === 'true' ? 'https' : 'http'
+
+      const pusher = new Pusher(this.connected_app.api_key, {
+        forceTLS: process.env.VUE_APP_TLS === 'true',
+        wsHost: process.env.VUE_APP_SERVER_HOST,
+        wsPort: process.env.VUE_APP_SERVER_PORT,
+        wssPort: process.env.VUE_APP_SERVER_PORT,
+        enabledTransports: ['ws', 'wss'],
+        authEndpoint: `${scheme}://${process.env.VUE_APP_SERVER_HOST}:${process.env.VUE_APP_SERVER_PORT}/apps/${this.connected_app.app_id}/authorize-channels`,
+        auth: {
+          headers: {
+            Authorization: this.connected_app.access_token
+          }
+        }
+      })
+
+      pusher.connection.bind('connected', () => {
+        this.connected = true
+        this.renderChart()
+      })
+
+      pusher.connection.bind('disconnected', () => {
+        console.log('websocket connection disconnected')
+        this.connected = false
+        this.chart = null
+      })
+
+      pusher.connection.bind('unavailable', () => {
+        this.connected = false
+        this.chart = null
+      })
+
+      pusher.connection.bind('connecting', () => {
+        this.connected = false
+        this.chart = null
+      })
+
+      this.pusher = pusher
+      this.subscribeToChannels(this.connected_app.app_id)
+    },
+
+    subscribeToChannels(appId) {
+      const channels = [
+        `private-app-${appId}-stats-concurrent-connections`
+      ]
+
+      channels.forEach((channel) => {
+        this.subscribe(channel)
+      })
+    },
+
+    subscribe(channelName) {
+      this.pusher.subscribe(channelName)
+        .bind('update', (data) => {
+          this.$set(this.connection_stats, 'concurrent', data.concurrent_connections)
+        })
+    },
+
+    renderChart() {
+      setTimeout(() => {
+        const chart = new ApexCharts(this.$refs.chart, this.chartOptions)
+        this.chart = chart
+        this.chart.render()
+      }, 100)
+    },
+
+    async handleSendEvent() {
+      const payload = this.trigger_event_payload
+      if (!payload.event || !payload.channel || !payload.data) {
+        alert('Please fill out all the fields')
+        return
+      }
+
+      await this.$axios.post(`/apps/${this.connected_app.app_id}/trigger-events`, payload, {
+        headers: {
+          Authorization: this.connected_app.access_token
+        }
+      })
+    }
+  }
 }
 </script>
