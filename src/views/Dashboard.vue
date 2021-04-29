@@ -105,31 +105,25 @@
             <thead>
               <tr>
                 <th scope="col">Type</th>
-                <th scope="col">Sockets</th>
+                <th scope="col">Socket ID</th>
                 <th scope="col">Details</th>
                 <th scope="col">Time</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr v-for="(log, index) in logs" :key="index">
                 <th scope="row">
-                  <span class="badge badge-secondary">api-message</span>
+                  <span class="badge badge-secondary">{{ log_types[log.type] }}</span>
                 </th>
-                <td>Mark</td>
-                <td>Otto</td>
-                <td>@mdo</td>
-              </tr>
-              <tr>
-                <th scope="row"><span class="badge badge-warning">Vacated</span></th>
-                <td>-</td>
-                <td>Channel private: chat-1</td>
-                <td>1:05:06</td>
-              </tr>
-              <tr>
-                <th scope="row"><span class="badge">Disconnection</span></th>
-                <td>Larry</td>
-                <td>the Bird</td>
-                <td>@twitter</td>
+                <td>{{ log.connection_id || 'N/A' }}</td>
+                <td>
+                  <template v-if="log.channel_name && log.event_name">
+                    <span class="badge badge-primary">Channel: {{ log.channel_name }}</span> |
+                    <span class="badge badge-primary">Event: {{ log.event_name }}</span>
+                  </template>
+                  <template v-else>N/A</template>
+                </td>
+                <td>{{ new Date(log.time * 1000).toLocaleString() }}</td>
               </tr>
             </tbody>
           </table>
@@ -149,6 +143,11 @@ export default {
     return {
       pusher: null,
       chart: null,
+      log_types: {
+        connected: 'New Connection',
+        disconnected: 'Disconnected',
+        api_message: 'API Message',
+      },
 
       apps: [],
 
@@ -164,6 +163,8 @@ export default {
         concurrent: 0,
         peak: 0
       },
+
+      logs: [],
 
       trigger_event_payload: {
         event: null,
@@ -337,6 +338,7 @@ export default {
 
       this.pusher = pusher
       this.subscribeToChannels(this.connected_app.app_id)
+      this.subscribeToLogs(this.connected_app.app_id)
     },
 
     subscribeToChannels(appId) {
@@ -347,6 +349,14 @@ export default {
       channels.forEach((channel) => {
         this.subscribe(channel)
       })
+    },
+
+    subscribeToLogs(appId) {
+      const channelName = `private-websockets-dashboard-${appId}`
+      this.pusher.subscribe(channelName)
+        .bind('log', (data) => {
+          this.logs.unshift(data)
+        })
     },
 
     subscribe(channelName) {
