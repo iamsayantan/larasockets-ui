@@ -43,7 +43,7 @@
           <div class="card">
             <div class="card-body">
               <h5 class="card-title font-weight-bold">Peak Connections</h5>
-              <p class="card-text" style="font-size: 40px">550</p>
+              <p class="card-text" style="font-size: 40px">{{ daily_stats.peak_connections }}</p>
             </div>
           </div>
         </div>
@@ -51,7 +51,7 @@
           <div class="card">
             <div class="card-body">
               <h5 class="card-title font-weight-bold">API Messages</h5>
-              <p class="card-text" style="font-size: 40px">335</p>
+              <p class="card-text" style="font-size: 40px">{{ daily_stats.api_messages }}</p>
             </div>
           </div>
         </div>
@@ -59,7 +59,7 @@
           <div class="card">
             <div class="card-body">
               <h5 class="card-title font-weight-bold">Websocket Messages</h5>
-              <p class="card-text" style="font-size: 40px">2202</p>
+              <p class="card-text" style="font-size: 40px">{{ daily_stats.websocket_messages }}</p>
             </div>
           </div>
         </div>
@@ -68,7 +68,7 @@
       <!-- graph block -->
       <div class="row m-1 p-2">
         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
-          <div id="chart" ref="chart"></div>
+          <div id="statisticsChart" ref="chart"></div>
         </div>
       </div>
       <!-- end of graph block -->
@@ -135,7 +135,8 @@
 </template>
 <script>
 import Pusher from 'pusher-js'
-import ApexCharts from 'apexcharts'
+import Plotly from 'plotly.js-dist'
+import moment from 'moment'
 
 export default {
   name: "Dashboard",
@@ -151,6 +152,10 @@ export default {
 
       apps: [],
 
+      current_app_id: null,
+
+      dailyStatTimer: null,
+
       connection_request: {
         app_id: null,
         app_secret: 'e20b04090c1e5cf11301'
@@ -162,6 +167,12 @@ export default {
       connection_stats: {
         concurrent: 0,
         peak: 0
+      },
+
+      daily_stats: {
+        peak_connections: 0,
+        api_messages: 0,
+        websocket_messages: 0
       },
 
       logs: [],
@@ -194,7 +205,7 @@ export default {
           type: 'line',
           stacked: false,
           toolbar: {
-            show: false
+            show: true
           },
         },
         dataLabels: {
@@ -262,9 +273,15 @@ export default {
       }
     }
   },
+  
   mounted() {
     this.fetchAppList()
   },
+
+  beforeDestroy() {
+    clearInterval(this.dailyStatTimer)
+  },
+
   methods: {
     async fetchAppList() {
       try {
@@ -286,6 +303,8 @@ export default {
         this.connection_request.app_secret = null
         this.connected_app = data.data
         this.initiatePusher()
+        this.fetchDataForGraph(data.data.app_id)
+        this.current_app_id = data.data.app_id
       } catch (e) {
         if (e.response && e.response.data) {
           alert(e.response.data.message)
@@ -339,6 +358,8 @@ export default {
       this.pusher = pusher
       this.subscribeToChannels(this.connected_app.app_id)
       this.subscribeToLogs(this.connected_app.app_id)
+      this.periodicStatUpdate(this.connected_app.app_id)
+      this.updateDailyStats(this.connected_app.app_id)
     },
 
     subscribeToChannels(appId) {
@@ -366,12 +387,36 @@ export default {
         })
     },
 
-    renderChart() {
-      setTimeout(() => {
-        const chart = new ApexCharts(this.$refs.chart, this.chartOptions)
-        this.chart = chart
-        this.chart.render()
-      }, 100)
+    async renderChart() {
+      const { peak_connection_stats, api_stats, websocket_message_stats } = await this.fetchDataForGraph(this.current_app_id)
+      const xAxisData = peak_connection_stats.x.map(ts => moment.unix(ts).format('DD-MM-YYYY HH:mm:ss'));
+
+      const chartData = [
+        {
+          x: xAxisData,
+          y: peak_connection_stats.y,
+          type: 'lines',
+          name: '# Peak Connections'
+        },
+        {
+          x: xAxisData,
+          y: api_stats.y,
+          type: 'bar',
+          name: '# Api Messages'
+        },
+        {
+          x: xAxisData,
+          y: websocket_message_stats.y,
+          type: 'bar',
+          name: '# Websocket Messages'
+        }
+      ];
+      const layout = {
+        autosize: true
+      }
+      this.chart = this.chart
+        ? Plotly.react('statisticsChart', chartData, layout)
+        : Plotly.newPlot('statisticsChart', chartData, layout, { scrollZoom: true });
     },
 
     async handleSendEvent() {
@@ -386,6 +431,32 @@ export default {
           Authorization: this.connected_app.access_token
         }
       })
+    },
+
+    async periodicStatUpdate(appId) {
+      this.dailyStatTimer = setInterval( async () => {
+        this.updateDailyStats(appId)
+      }, 5000)
+    },
+
+    async updateDailyStats(appId) {
+      const { data } = await this.$axios.get(`/apps/${appId}/daily-stats`, {
+          headers: {
+            Authorization: this.connected_app.access_token
+          }
+        })
+
+        this.daily_stats = data.data
+    },
+
+    async fetchDataForGraph(appId) {
+      const { data } = await this.$axios.get(`/apps/${appId}/graph`, {
+        headers: {
+          Authorization: this.connected_app.access_token
+        }
+      })
+
+      return data.data
     }
   }
 }
