@@ -367,6 +367,7 @@ export default {
         `private-app-${appId}-stats-concurrent-connections`
       ]
 
+      this.subscribeToStats(appId)
       channels.forEach((channel) => {
         this.subscribe(channel)
       })
@@ -377,6 +378,20 @@ export default {
       this.pusher.subscribe(channelName)
         .bind('log', (data) => {
           this.logs.unshift(data)
+        })
+    },
+
+    subscribeToStats(appId) {
+      const channelName = `private-app-${appId}-current-stats`
+      this.pusher.subscribe(channelName)
+        .bind('update', (data) => {
+          const time = moment.unix(data.timestamp).format('DD-MM-YYYY HH:mm:ss')
+          const update = {
+            x: [[time], [time], [time]],
+            y: [[data.peak_connections], [data.api_messages], [data.websocket_messages]]
+          }
+          Plotly.extendTraces('statisticsChart', update, [0, 1, 2])
+          console.log('STAT_UPDATE', data)
         })
     },
 
@@ -412,11 +427,12 @@ export default {
         }
       ];
       const layout = {
-        autosize: true
+        autosize: true,
+        xaxis: {
+          'tickformat': '%d/%m %I:%M'
+        }
       }
-      this.chart = this.chart
-        ? Plotly.react('statisticsChart', chartData, layout)
-        : Plotly.newPlot('statisticsChart', chartData, layout, { scrollZoom: true });
+      this.chart = Plotly.newPlot('statisticsChart', chartData, layout);
     },
 
     async handleSendEvent() {
@@ -447,6 +463,7 @@ export default {
         })
 
         this.daily_stats = data.data
+        this.connection_stats.concurrent = data.data.concurrent_connection
     },
 
     async fetchDataForGraph(appId) {
