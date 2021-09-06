@@ -163,7 +163,7 @@ export default {
         },
         vacated: {
           label: 'Channel Vacated',
-          colour: '#FFFFFF'
+          colour: '#343A40'
         }
       },
 
