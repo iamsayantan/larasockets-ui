@@ -113,7 +113,7 @@
             <tbody>
               <tr v-for="(log, index) in logs" :key="index">
                 <th scope="row">
-                  <span class="badge badge-secondary">{{ log_types[log.type] }}</span>
+                  <span class="badge" :style="`background-color: ${ log_types[log.type].colour }; color: white`">{{ log_types[log.type].label }}</span>
                 </th>
                 <td>{{ log.connection_id || 'N/A' }}</td>
                 <td>
@@ -145,11 +145,26 @@ export default {
       pusher: null,
       chart: null,
       log_types: {
-        connected: 'New Connection',
-        disconnected: 'Disconnected',
-        api_message: 'API Message',
-        occupied: 'Channel Occupied',
-        vacated: 'Channel Vacated'
+        connected: {
+          label: 'New Connection',
+          colour: '#28A745'
+        },
+        disconnected: {
+          label: 'Disconnected',
+          colour: '#DC3545'
+        },
+        api_message: {
+          label: 'API Message',
+          colour: '#17A2B8'
+        },
+        occupied: {
+          label: 'Channel Occupied',
+          colour: '#007BFF'
+        },
+        vacated: {
+          label: 'Channel Vacated',
+          colour: '#FFFFFF'
+        }
       },
 
       apps: [],
@@ -160,7 +175,7 @@ export default {
 
       connection_request: {
         app_id: null,
-        app_secret: ''
+        app_secret: 'e20b04090c1e5cf11301'
       },
 
       connected: false,
