@@ -160,7 +160,7 @@ export default {
 
       connection_request: {
         app_id: null,
-        app_secret: 'e20b04090c1e5cf11301'
+        app_secret: ''
       },
 
       connected: false,
