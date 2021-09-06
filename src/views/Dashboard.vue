@@ -117,9 +117,9 @@
                 </th>
                 <td>{{ log.connection_id || 'N/A' }}</td>
                 <td>
-                  <template v-if="log.channel_name && log.event_name">
-                    <span class="badge badge-primary">Channel: {{ log.channel_name }}</span> |
-                    <span class="badge badge-primary">Event: {{ log.event_name }}</span>
+                  <template v-if="log.channel_name || log.event_name">
+                    <span v-if="log.channel_name" class="badge badge-primary">Channel: {{ log.channel_name }}</span>
+                    <span v-if="log.event_name" class="badge badge-primary"> | Event: {{ log.event_name }}</span>
                   </template>
                   <template v-else>N/A</template>
                 </td>
@@ -148,6 +148,8 @@ export default {
         connected: 'New Connection',
         disconnected: 'Disconnected',
         api_message: 'API Message',
+        occupied: 'Channel Occupied',
+        vacated: 'Channel Vacated'
       },
 
       apps: [],
