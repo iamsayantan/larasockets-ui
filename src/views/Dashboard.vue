@@ -89,6 +89,7 @@
               </div>
               <div class="form-group col-md-12 d-flex justify-content-end">
                 <button type="submit" class="btn btn-primary mb-2">Send Event</button>
+                <button type="button" style="margin-left: 5px;" class="btn btn-danger mb-2" @click="logs = []">Clear Logs</button>
               </div>
             </div>
 
@@ -118,8 +119,8 @@
                 <td>{{ log.connection_id || 'N/A' }}</td>
                 <td>
                   <template v-if="log.channel_name || log.event_name">
-                    <span v-if="log.channel_name" class="badge badge-primary">Channel: {{ log.channel_name }}</span>
-                    <span v-if="log.event_name" class="badge badge-primary"> | Event: {{ log.event_name }}</span>
+                    <span v-if="log.channel_name">Channel: </span> <span class="badge badge-primary">{{ log.channel_name }}</span>
+                    <span v-if="log.event_name"> | Event:  </span> <span class="badge badge-primary">{{ log.event_name }}</span>
                   </template>
                   <template v-else>N/A</template>
                 </td>
